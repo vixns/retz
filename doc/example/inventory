@@ -1,0 +1,11 @@
+[masters]
+localhost
+
+[agents]
+localhost
+
+[retz-server]
+localhost
+
+[retz-client]
+localhost
