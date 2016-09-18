@@ -20,17 +20,36 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Objects;
+import java.util.Optional;
+
 public class GetJobRequest extends Request {
     private int id;
+    private Optional<String> listDir;
+    private Optional<String> fetchFile;
 
     @JsonCreator
-    public GetJobRequest(@JsonProperty("id") int id) {
+    public GetJobRequest(@JsonProperty(value = "id", required = true) int id,
+                         @JsonProperty(value = "listDir") Optional<String> dir,
+                         @JsonProperty(value = "fetchFile") Optional<String> file) {
         this.id = id;
+        this.listDir = Objects.requireNonNull(dir);
+        this.fetchFile = Objects.requireNonNull(file);
     }
 
     @JsonGetter("id")
     public int id() {
         return id;
+    }
+
+    @JsonGetter("listDir")
+    public Optional<String> listDir() {
+        return listDir;
+    }
+
+    @JsonGetter("fetchFile")
+    public Optional<String> fetchFile() {
+        return fetchFile;
     }
 
     @Override

@@ -19,20 +19,40 @@ package io.github.retz.protocol;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.retz.protocol.data.DirEntry;
+import io.github.retz.protocol.data.FileContent;
 import io.github.retz.protocol.data.Job;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class GetJobResponse extends Response {
     private Optional<Job> job;
+    private List<DirEntry> entries;
+    private Optional<FileContent> file;
 
     @JsonCreator
-    public GetJobResponse(@JsonProperty("job") Optional<Job> job) {
-        this.job = job;
+    public GetJobResponse(@JsonProperty("job") Optional<Job> job,
+                          @JsonProperty("entries") List<DirEntry> entries,
+                          @JsonProperty("file") Optional<FileContent> file) {
+        this.job = Objects.requireNonNull(job);
+        this.entries = (entries == null)? new LinkedList<>() : entries;
+        this.file = Objects.requireNonNull(file);
     }
 
     @JsonGetter("job")
     public Optional<Job> job() {
         return job;
+    }
+
+    @JsonGetter("entries")
+    public List<DirEntry> entries() {
+        return entries;
+    }
+
+    public Optional<FileContent> file() {
+        return file;
     }
 }

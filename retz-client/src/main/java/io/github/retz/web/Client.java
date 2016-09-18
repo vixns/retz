@@ -265,8 +265,8 @@ public class Client implements AutoCloseable {
         return rpc(new ScheduleRequest(job, false));
     }
 
-    public Response getJob(int id) throws IOException {
-        return rpc(new GetJobRequest(id));
+    public Response getJob(int id, Optional<String> listDir, Optional<String> filename) throws IOException {
+        return rpc(new GetJobRequest(id, listDir, filename));
     }
 
     public Job run(Job job) throws IOException {
