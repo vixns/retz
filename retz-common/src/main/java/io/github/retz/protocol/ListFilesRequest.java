@@ -19,25 +19,50 @@ package io.github.retz.protocol;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.retz.protocol.data.DirEntry;
-import io.github.retz.protocol.data.FileContent;
-import io.github.retz.protocol.data.Job;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class GetJobResponse extends Response {
-    private Optional<Job> job;
+public class ListFilesRequest extends Request {
+    private int id;
+    private String path;
 
     @JsonCreator
-    public GetJobResponse(@JsonProperty("job") Optional<Job> job) {
-        this.job = Objects.requireNonNull(job);
+    public ListFilesRequest(@JsonProperty(value = "id", required = true) int id,
+                            @JsonProperty(value = "path", required = true) String dir) {
+        this.id = id;
+        this.path = Objects.requireNonNull(dir);
     }
 
-    @JsonGetter("job")
-    public Optional<Job> job() {
-        return job;
+    @JsonGetter("id")
+    public int id() {
+        return id;
+    }
+
+    @JsonGetter("path")
+    public String path() {
+        return path;
+    }
+
+    @Override
+    public String resource() {
+        StringBuilder builder = new StringBuilder("/job/")
+                .append(id)
+                .append("/path/").append(path);
+        return builder.toString();
+    }
+
+    @Override
+    public String method() {
+        return GET;
+    }
+
+    @Override
+    public boolean hasPayload() {
+        return false;
+    }
+
+    public static String resourcePattern() {
+        return "/job/:id/path/:path";
     }
 }

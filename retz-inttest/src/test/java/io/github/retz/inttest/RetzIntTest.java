@@ -90,10 +90,10 @@ public class RetzIntTest extends IntTestBase {
         String baseUrl = baseUrl(runRes);
         String toDir = "build/log/";
         // These downloaded files are not inspected now, useful for debugging test cases, maybe
-        Client.fetchHTTPFile(baseUrl, "stdout", toDir);
-        Client.fetchHTTPFile(baseUrl, "stderr", toDir);
-        Client.fetchHTTPFile(baseUrl, "stdout-" + runRes.id(), toDir);
-        Client.fetchHTTPFile(baseUrl, "stderr-" + runRes.id(), toDir);
+        client.getWholeFile(runRes.id(), "stdout", toDir);
+        client.getWholeFile(runRes.id(), "stderr", toDir);
+        client.getWholeFile(runRes.id(), "stdout-" + runRes.id(), toDir);
+        client.getWholeFile(runRes.id(), "stderr-" + runRes.id(), toDir);
 
         String actualText = catStdout(runRes);
         assertEquals(echoText + "\n", actualText);

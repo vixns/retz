@@ -85,8 +85,9 @@ public class CommandRun implements SubCommand {
             LOG.info("Sending job {} to App {}", job.cmd(), job.appid());
             Job result = webClient.run(job);
 
+
             if (result != null) {
-                Client.fetchJobResult(result, resultDir);
+                webClient.getWholeFile(result.id(), "stdout", false, System.out);
                 LOG.info("Job result files URL: {}", result.url());
                 LOG.info("Job(id={}, cmd='{}') finished in {} seconds and returned {}",
                         result.id(), job.cmd(), TimestampHelper.diffMillisec(result.finished(), result.started()) / 1000.0,

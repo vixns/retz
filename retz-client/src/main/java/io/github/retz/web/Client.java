@@ -1,18 +1,18 @@
 /**
- *    Retz
- *    Copyright (C) 2016 Nautilus Technologies, Inc.
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Retz
+ * Copyright (C) 2016 Nautilus Technologies, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package io.github.retz.web;
 
@@ -24,17 +24,14 @@ import io.github.retz.protocol.*;
 import io.github.retz.protocol.data.Application;
 import io.github.retz.protocol.data.Job;
 import io.github.retz.protocol.data.MesosContainer;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -86,110 +83,6 @@ public class Client implements AutoCloseable {
             } catch (KeyManagementException e) {
                 throw new AssertionError(e.toString());
             }
-        }
-    }
-
-    public static void fetchJobResult(Job job, String resultDir) {
-        if (resultDir == null) {
-            return;
-        }
-        if (job.url() == null) {
-            LOG.error("Can't fetch outputs: no url found");
-            return;
-        }
-        if (resultDir.equals("-")) {
-            LOG.info("==== Printing stdout of remote executor ====");
-            catHTTPFile(job.url(), "stdout");
-            LOG.info("==== Printing stderr of remote executor ====");
-            catHTTPFile(job.url(), "stderr");
-
-            if (statHTTPFile(job.url(), "stdout-" + job.id())) {
-                LOG.info("==== Printing stdout-{} of remote executor ====", job.id());
-                catHTTPFile(job.url(), "stdout-" + job.id());
-            }
-            if (statHTTPFile(job.url(), "stderr-" + job.id())) {
-                LOG.info("==== Printing stderr-{} of remote executor ====", job.id());
-                catHTTPFile(job.url(), "stderr-" + job.id());
-            }
-        } else {
-            fetchHTTPFile(job.url(), "stdout", resultDir);
-            Client.fetchHTTPFile(job.url(), "stderr", resultDir);
-            if (statHTTPFile(job.url(), "stdout-" + job.id())) {
-                Client.fetchHTTPFile(job.url(), "stdout-" + job.id(), resultDir);
-            }
-            if (statHTTPFile(job.url(), "stderr-" + job.id())) {
-                Client.fetchHTTPFile(job.url(), "stderr-" + job.id(), resultDir);
-            }
-        }
-    }
-
-    public static boolean statHTTPFile(String url, String name) {
-        String addr = url.replace("files/browse", "files/download") + "%2F" + name;
-
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) new URL(addr).openConnection();
-            conn.setRequestMethod("HEAD");
-            conn.setDoOutput(false);
-            LOG.debug(conn.getResponseMessage());
-            return conn.getResponseCode() == 200 ||
-                    conn.getResponseCode() == 204;
-        } catch (IOException e) {
-            LOG.debug("Failed to fetch {}: {}", addr, e.toString());
-            return false;
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
-        }
-    }
-
-    public static void catHTTPFile(String url, String name) {
-        catHTTPFile(url, name, System.out);
-    }
-
-    public static void catHTTPFile(String url, String name, OutputStream out) {
-        String addr = url.replace("files/browse", "files/download") + "%2F" + name;
-
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) new URL(addr).openConnection();
-            conn.setRequestMethod("GET");
-            conn.setDoOutput(true);
-        } catch (IOException e) {
-            LOG.error("Failed to fetch {}: {}", addr, e.toString());
-            return;
-        }
-        //String s = conn.getHeaderField("Content-length");
-        //LOG.info("Content-length: {}", s);
-        try (InputStream input = conn.getInputStream()) {
-            byte[] buffer = new byte[65536];
-            int bytesRead = 0;
-            while ((bytesRead = input.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
-            }
-        } catch (IOException e) {
-            // Somehow this happens even HTTP was correct
-            LOG.debug("Cannot fetch file {}: {}", addr, e.toString());
-            // Just retry until your stack get stuck; thanks to SO:33340848
-            // and to that crappy HttpURLConnection
-            catHTTPFile(url, name, out);
-        } finally {
-            conn.disconnect();
-        }
-    }
-
-    public static void fetchHTTPFile(String url, String name, String dir) {
-        boolean _res = new File(dir).mkdir();
-        String addr = url.replace("files/browse", "files/download") + "%2F" + name;
-        String localfile = FilenameUtils.concat(dir, name);
-        LOG.info("Downloading {} as {}", addr, localfile);
-        try {
-            FileUtils.copyURLToFile(new URL(addr), new File(localfile));
-        } catch (MalformedURLException e) {
-            LOG.error(e.toString());
-        } catch (IOException e) {
-            LOG.error(e.toString());
         }
     }
 
@@ -265,8 +158,68 @@ public class Client implements AutoCloseable {
         return rpc(new ScheduleRequest(job, false));
     }
 
-    public Response getJob(int id, Optional<String> listDir, Optional<String> filename) throws IOException {
-        return rpc(new GetJobRequest(id, listDir, filename));
+    public Response getJob(int id) throws IOException {
+        return rpc(new GetJobRequest(id));
+    }
+
+    public Response getFile(int id, String file, int offset, int length) throws IOException {
+        return rpc(new GetFileRequest(id, file, offset, length));
+    }
+
+    public void getWholeFile(int id, String filename, String resultDir) throws IOException {
+        String path = resultDir + "/" + filename;
+        FileOutputStream out = new FileOutputStream(path);
+        getWholeFile(id, filename, false, out);
+    }
+
+    // Gets whole file until the job finishes and streams out to 'out'!!!
+    public void getWholeFile(int id, String filename, boolean poll, OutputStream out) throws IOException {
+        int offset = 0;
+        int length = 65536;
+        do {
+            Response res = getFile(id, filename, offset, length);
+            if (res instanceof GetFileResponse) {
+                GetFileResponse getFileResponse = (GetFileResponse) res;
+                if (getFileResponse.file().isPresent()) {
+                    if (getFileResponse.file().get().data().isEmpty()) {
+                        // All contents fetched
+                        if (poll) {
+                            try {
+                                Thread.sleep(1024);
+                            } catch (InterruptedException e) {
+                            }
+                        }
+                    } else {
+                        byte[] data = getFileResponse.file().get().data().getBytes(UTF_8);
+                        out.write(data);
+                        offset += data.length;
+                    }
+                } else if (getFileResponse.job().isPresent()) {
+                    // If the job is still running or not yet running ...
+                    if (getFileResponse.job().get().state() == Job.JobState.FINISHED
+                            || getFileResponse.job().get().state() == Job.JobState.KILLED) {
+                        // Just loop until the end if it's empty
+                    } else if (poll) {
+                        // Wait a bit
+                        try {
+                            Thread.sleep(1024);
+                        } catch (InterruptedException e) {
+                        }
+                    }
+                } else {
+                    // No such file
+                    LOG.info("No such job or file: {}", id);
+                    return;
+                }
+            } else {
+                LOG.error(res.status());
+                return;
+            }
+        } while (poll);
+    }
+
+    public Response listFiles(int id, String path) throws IOException {
+        return rpc(new ListFilesRequest(id, path));
     }
 
     public Job run(Job job) throws IOException {
@@ -344,6 +297,8 @@ public class Client implements AutoCloseable {
             String payload = "";
             if (req.hasPayload()) {
                 payload = mapper.writeValueAsString(req);
+                LOG.info(req.method());
+                LOG.info(payload);
                 md5 = digest(payload);
                 conn.setRequestProperty("Content-MD5", md5);
                 conn.setRequestProperty("Content-Length", Integer.toString(payload.length()));

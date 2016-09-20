@@ -84,9 +84,16 @@ public final class WebConsole {
                 md5 = "";
             }
             String date = req.headers("date");
-            String resource = new URI(req.url()).getPath();
+            String resource;
 
-            LOG.debug("req={}, res={}", req, res);
+            if (req.raw().getQueryString() != null) {
+                resource = new StringBuilder().append(new URI(req.url()).getPath())
+                        .append("?").append(req.raw().getQueryString()).toString();
+            } else {
+                resource = new URI(req.url()).getPath();
+            }
+
+            LOG.debug("req={}, res={}, resource=", req, res, resource);
             // These don't require authentication to simplify operation
             if ("/ping".equals(resource) || "/status".equals(resource)
                     || "/cui".equals(resource) // TODO: this is special exception; in future this must be removed...
@@ -132,18 +139,11 @@ public final class WebConsole {
             return MAPPER.writeValueAsString(listJobResponse);
         });
         // /job  PUT -> schedule, GET -> get-job, DELETE -> kill
-        get(GetJobRequest.resourcePattern(), (req, res) -> {
-            int id = Integer.parseInt(req.params(":id"));
-            LOG.debug("get job id={}", id);
-            //io.github.retz.protocol.Request request = MAPPER.readValue(req.bodyAsBytes(), io.github.retz.protocol.Request.class);
-            Optional<Job> job = WebConsole.getJob(id);
-            GetJobResponse getJobResponse = new GetJobResponse(job);
-            getJobResponse.ok();
-            res.status(200);
-            //    res.status(404)  if job is present...
-            res.type("application/json");
-            return MAPPER.writeValueAsString(getJobResponse);
-        });
+        get(GetJobRequest.resourcePattern(), JobRequestRouter::getJob);
+        // Get a file
+        get(GetFileRequest.resourcePattern(), JobRequestRouter::getFile);
+        // Get file list
+        get(ListFilesRequest.resourcePattern(), JobRequestRouter::getPath);
 
         put(ScheduleRequest.resourcePattern(), (req, res) -> {
             ScheduleRequest scheduleRequest = MAPPER.readValue(req.bodyAsBytes(), ScheduleRequest.class);
@@ -285,11 +285,6 @@ public final class WebConsole {
         JobQueue.getAllFinished(finished, limit);
 
         return new ListJobResponse(queue, running, finished);
-    }
-
-    // Search job from JobQueue with matching id
-    public static Optional<Job> getJob(int id) {
-        return JobQueue.getJob(id);
     }
 
     public static boolean kill(int id) {
